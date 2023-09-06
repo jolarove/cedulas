@@ -307,15 +307,6 @@ for index, row in df_fb_extract.iterrows(): #iteramos en la base de datos "df_fb
                   print("no se pudo descargar") 
                   downloads.append("no se descargó")  
                   total_img=total_img-1
-
-            # filename = clean_filename(f'{name_float} {status}') #Limpiamos el nombre
-            # try:
-            #     with open(f'cedulas/imagenes/todas/{filename}_{index}.png', 'wb') as file: #descargamos la imagen con formato de nombre "nombre del desaparecido desaparecido/localizado index"
-            #             file.write(img.content)
-            #             downloads.append("Descargada")
-            # except:
-            #     #print("nos se pudo descargar") 
-            #     downloads.append("no se descargó")
     else:
         downloads.append(imagen) #Si no dice "nan" el valor de imagen, quiere decir que a partir de ahí ya están en la carpeta las cédulas, pero igual enviamos el valor de la casilla para evitar errores.      
         
