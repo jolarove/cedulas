@@ -10,10 +10,12 @@ import requests #Importa funcionalidades para obtener una url (en este caso, par
 import re #para caracteres especiales
 import datetime #para formatear las fechas
 import locale #para que la fecha la lea en español
+from PIL import Image
+from io import BytesIO
 
 #Definimos las opciones del driver
 options = webdriver.ChromeOptions()
-options.add_argument('--headless') #Ocultamos la ventana del navegador, comentamos esta línea si se quiere ver el navegador#options.add_argument('--start-maximized') #Maximizamos la ventana
+#options.add_argument('--headless') #Ocultamos la ventana del navegador, comentamos esta línea si se quiere ver el navegador#options.add_argument('--start-maximized') #Maximizamos la ventana
 options.add_argument('--start-maximized') #Maximizamos la ventana
 
 root = 'https://www.facebook.com'
@@ -70,8 +72,8 @@ def get_elements():
         if description == "": #Si la descripción está vacía, agregará una nota que dice que no es cédula.
             note = "No es cédula"
             imgUrl="" #no extraemos la URL
-        elif name == "Sin dato": #Si se busca a la familia, aún extraerá la url de la imagen (esto puede omitirse si se requiere)
-            imgUrl = img.get_attribute('src')
+        #elif name == "Sin dato": #Si se busca a la familia, aún extraerá la url de la imagen (esto puede omitirse si se requiere)
+            #imgUrl = img.get_attribute('src')
         else:
             imgUrl = img.get_attribute('src') #si no se cumple nada de lo anterior, extrar la URL
             note=""
@@ -124,7 +126,7 @@ def get_name(name): #esta es la función que usamos dentro de la función get_el
 
 
 #Inicia la acción  
-time.sleep(5) #Esperamos que cargue 
+time.sleep(3) #Esperamos que cargue 
 cerrar() #Cerramos formulario de inicio de sesión
 time.sleep(2) #Esperamos 2 segundos para que cargue, si el internet es bueno será antes, si es malo, dará error porque necesita más tiempo
 
@@ -149,25 +151,30 @@ url=[]
 
 df_post_link = pd.read_csv('cedulas\links.csv') #importamos el df que tiene los links de cada publicación
 last_cedula = df_post_link['0'].iloc[0] #Ubicamos la primera posición de la base de datos
-#print(last_cedula)
+print(last_cedula)
 index = 0 #Index para recorrer en las cédulas
 #Iniciamos el ciclo
-while 'https://www.facebook.com/BusquedaJal/photos/pb.100064672999223.-2207520000/123545622525393/?type=3' not in df_post_link: #el enlace es el de la primera cédula que publicó la Comisión de Búsqueda, en febrero de 2020
+while 'https://web.facebook.com/BusquedaJal/photos/pb.100064672999223.-2207520000/123545622525393/?type=3' not in df_post_link: #el enlace es el de la primera cédula que publicó la Comisión de Búsqueda, en febrero de 2020
     cedulas_links = driver.find_elements(by='xpath', value='//div[@class="x1e56ztr"]//a') #Encontramos todas las minitauras de las cédulas
-    
+    print(len(cedulas_links))
+    cedula_link = cedulas_links[index].get_attribute('href') #extramos el link de la publicación individual de la cédula
+    if last_cedula == cedula_link: #Si ese link es el mismo de la primera posición de la base de datos, se corta el bucle, pues ya se actualizó
+        break
+    else:
+        post_link.append(cedula_link) #Si el link no es el mismo, lo enviamos a la lista post_link creada antes
+        #print(cedula_link)
+        index += 1 
     if index < len(cedulas_links): #comparamos la variable index con la cantidad de miniaturas encontradas
-        cedula_link = cedulas_links[index].get_attribute('href') #extramos el link de la publicación individual de la cédula
-        if cedula_link == last_cedula: #Si ese link es el mismo de la primera posición de la base de datos, se corta el bucle, pues ya se actualizó
-            break
-        else:
-            post_link.append(cedula_link) #Si el link no es el mismo, lo enviamos a la lista post_link creada antes
-            #print(cedula_link)
-            index += 1 
+        
+        print(cedula_link)
+        print(type(cedula_link))
+        print(type(last_cedula))
+        
     #scroll
     else: #Si ya no hay más miniaturas a la vista, hace el scroll
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")            
         time.sleep(1) #Despues de cada scroll esperamos a que cargue
-#print(len(post_link))
+print(len(post_link))
 
 #Enviamos los datos de la lista post_link a la base de datos links
 df_links = pd.concat([pd.DataFrame({'0':post_link}), df_post_link], ignore_index=True)
@@ -177,12 +184,12 @@ df_links.to_csv('cedulas/links.csv', index=False) #Guardamos la actualización e
 #NOTA: mismo caso que con la base de datos "links.csv".
 df_data_fb_cedulas = pd.read_csv('cedulas\df_fb_extract.csv')
 last_link = df_data_fb_cedulas['Link'].iloc[0] #Ubicamos la posición más reciente, el último link cargado a la bd
-#print(last_link)
+print(last_link)
 
 #Descargamos la información, pero no las fotos
 for link in df_links.itertuples(index=False): #iteramos en la base de datos de los links para abrir uno a uno
     try: 
-        #print(link[0])
+        print(link[0])
         if link[0] == last_link: #Si el link es el mismo que el último link cargado a la base de datos "df_data_fb_cedulas", se rompe el ciclo, pues ya actualizamos
             break
         else: #Sino, a descargar todo
@@ -210,6 +217,8 @@ df = pd.DataFrame({'Nombre': name_list, 'Fecha de publicación': date_list, 'Des
 
 #Unimos el df con la base de datos "df_data_fb_cedulas" que fue en la que importamos el archivo df_fb_extract.csv
 df_fb_extract = pd.concat([df, df_data_fb_cedulas], ignore_index=True)
+df_fb_extract.to_csv('cedulas/df_fb_extract.csv', index=False)
+
 new_dates = [] #Creamos una lista para las fechas formateadas
 # Configuramos el idioma español para las fechas ya que están en formato "31 de agosto" y buscamos "2023-08-31"
 locale.setlocale(locale.LC_TIME, "es_ES.utf8")
@@ -217,8 +226,14 @@ locale.setlocale(locale.LC_TIME, "es_ES.utf8")
 for date in df_fb_extract["Fecha de publicación"].values: #iteramos en las fechas
     date_str = str(date) #convertimos a str el formato de la fecha, pues es float originalmente
     #print(date_str)
-    if date_str.endswith("h") or date_str.endswith("min"):
+    if date_str.endswith("min"):
         new_date = datetime.datetime.today().date() #Si dice que la cédula fue publicada hace minutos y horas, asignamos la fecha de hoy
+    elif date_str.endswith("h"):
+        today = datetime.datetime.now()
+        hours, unidad = date_str.split()
+        hours_diference = int(hours)
+        time_diference =  today - datetime.timedelta(hours=hours_diference)
+        new_date = time_diference.strftime("%Y-%m-%d")
     elif date_str.endswith("d"): #Si dice que fue publicada hace X días, extraemos el número de días para obtener la fecha
         number_days = int(re.search(r'\d+', date_str).group())
         new_date = datetime.datetime.today().date() - datetime.timedelta(days=number_days)
@@ -239,10 +254,14 @@ for date in df_fb_extract["Fecha de publicación"].values: #iteramos en las fech
     new_dates.append(new_date)
 #print(new_dates)
 df_fb_extract['Fecha de publicación']=new_dates #Sustituimos los valores de fecha de publicación en la base de datos, por los de la lista que creamos
-
+df_fb_extract.to_csv('cedulas/df_fb_extract.csv', index=False)
 
 #Ahora sí, descargamos las imágenes
 downloads = [] #creamos una lista que nos servirá para actualizar
+total_img = len(df_fb_extract)
+print(total_img)
+service=ChromeService(ChromeDriverManager().install()) #instalamos el driver
+driver = webdriver.Chrome(service=service, options=options) #Configuramos el driver
 for index, row in df_fb_extract.iterrows(): #iteramos en la base de datos "df_fb_extract" y elegimos las columnas que necesitamos
     img = row["Url Cédula"]
     name_float = row["Nombre"] 
@@ -250,25 +269,58 @@ for index, row in df_fb_extract.iterrows(): #iteramos en la base de datos "df_fb
     status = str(status_float)
     imagen_float = row["Imagen"] #En esta columna se especifica si la imagen ya fue descargada o no
     imagen = str(imagen_float)
+    link = row["Link"]
 
     if imagen == "nan": #Si la columna imagen tiene valor "nan", quiere decir que falta por descargar esa imagen
-        if name_float == "nan" or img == "nan" or name_float == "Sin dato": #La imagen se descarga sólo si hay texto en la descripción, sino no descarga, ese es el filtro
+        if name_float == "" or img == "" or name_float == "Sin dato": #La imagen se descarga sólo si hay texto en la descripción, sino no descarga, ese es el filtro
             downloads.append("no se descargó")
+            total_img=total_img-1
         else:
-            img = requests.get(img) #obtenemos la url de cada imagen, esto ya es sin selenium para acelerar el proceso
-            filename = clean_filename(f'{name_float} {status}') #Limpiamos el nombre
-            try:
-                with open(f'cedulas/imagenes/todas/{filename}_{index}.png', 'wb') as file: #descargamos la imagen con formato de nombre "nombre del desaparecido desaparecido/localizado index"
-                        file.write(img.content)
-                        downloads.append("Descargada")
+            try: 
+                img = requests.get(img) #obtenemos la url de cada imagen, esto ya es sin selenium para acelerar el proceso
+                if img.status_code == 200 and img.headers.get("content-type", "").startswith("image"):
+                    print(name_float)
+                    final_image = Image.open(BytesIO(img.content))
+                    filename = clean_filename(f'{name_float} {status}') #Limpiamos el nombre
+                    final_image.save(f'cedulas/imagenes/todas/{filename}_{total_img}.png')
+                    downloads.append("Descargada")
+                    total_img=total_img-1
+                else:
+                    print(name_float)
+                    print(img)
+                    
+                    driver.get(link)
+                    time.sleep(1)
+                    new_img = driver.find_element(by='xpath', value='//div[@data-pagelet="MediaViewerPhoto"]//img[@data-visualcompletion="media-vc-image"]') #Encontramos la imagen
+                    new_url = new_img.get_attribute('src')
+                    print(new_url)
+                    df_fb_extract.at[index,"Url Cédula"] = new_url
+                    #print(df_fb_extract.head(5))
+                    new_url = requests.get(new_url)
+                    final_image = Image.open(BytesIO(new_url.content))
+                    filename = clean_filename(f'{name_float} {status}') #Limpiamos el nombre
+                    final_image.save(f'cedulas/imagenes/todas/{filename}_{total_img}.png')
+                    downloads.append("Descargada")
+                    total_img=total_img-1
+                    df_fb_extract.to_csv('cedulas/df_fb_extract.csv', index=False)
             except:
-                #print("nos se pudo descargar") 
-                downloads.append("no se descargó")
+                  print("no se pudo descargar") 
+                  downloads.append("no se descargó")  
+                  total_img=total_img-1
+
+            # filename = clean_filename(f'{name_float} {status}') #Limpiamos el nombre
+            # try:
+            #     with open(f'cedulas/imagenes/todas/{filename}_{index}.png', 'wb') as file: #descargamos la imagen con formato de nombre "nombre del desaparecido desaparecido/localizado index"
+            #             file.write(img.content)
+            #             downloads.append("Descargada")
+            # except:
+            #     #print("nos se pudo descargar") 
+            #     downloads.append("no se descargó")
     else:
         downloads.append(imagen) #Si no dice "nan" el valor de imagen, quiere decir que a partir de ahí ya están en la carpeta las cédulas, pero igual enviamos el valor de la casilla para evitar errores.      
         
 df_fb_extract["Imagen"] = downloads #Sustituimos la columna "Imagen" en la base de datos df_fb_extract por la lista downloads
-
+driver.quit()
 #Descargamos la base de datos en un csv
 df_fb_extract.to_csv('cedulas/df_fb_extract.csv', index=False)
 #print(df_fb_extract)
