@@ -15,7 +15,7 @@ from io import BytesIO
 
 #Definimos las opciones del driver
 options = webdriver.ChromeOptions()
-#options.add_argument('--headless') #Ocultamos la ventana del navegador, comentamos esta línea si se quiere ver el navegador#options.add_argument('--start-maximized') #Maximizamos la ventana
+options.add_argument('--headless') #Ocultamos la ventana del navegador, comentamos esta línea si se quiere ver el navegador#options.add_argument('--start-maximized') #Maximizamos la ventana
 options.add_argument('--start-maximized') #Maximizamos la ventana
 
 root = 'https://www.facebook.com'
