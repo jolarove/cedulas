@@ -44,8 +44,8 @@ def get_elements():
     try: 
         description_element = driver.find_element(by='xpath', value='//div[@class="xyinxu5 x4uap5 x1g2khh7 xkhd6sd"]//span') #Extraemos el copy de la publicación si lo hay
         description = description_element.text
-        #if description_element.find_elements(by='tag name', value='br'): #Los boletines de otro tipo, tienen saltos de línea, los filtramos para no descargar esas imágenes
-            #description = "" #la declaramos vacía porque así filtraremos para no descargar esas imágenes que no nos sirven
+        if description_element.find_elements(by='tag name', value='br'): #Los boletines de otro tipo, tienen saltos de línea, los filtramos para no descargar esas imágenes
+            description = "" #la declaramos vacía porque así filtraremos para no descargar esas imágenes que no nos sirven
     except:
         description=""
     try:
@@ -75,9 +75,9 @@ def get_elements():
         img =WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//img[@data-visualcompletion="media-vc-image"]'))) #Encontramos la imagen, usamos espera explícita para que siga hasta que encuentre la Url
         if description == "": #Si la descripción está vacía, agregará una nota que dice que no es cédula.
             note = "No es cédula"
-            #imgUrl="" #no extraemos la URL
+            imgUrl="" #no extraemos la URL
         #elif name == "Sin dato": #Si se busca a la familia, aún extraerá la url de la imagen (esto puede omitirse si se requiere)
-            imgUrl = img.get_attribute('src')
+            #imgUrl = img.get_attribute('src')
         else:
             imgUrl = img.get_attribute('src') #si no se cumple nada de lo anterior, extrar la URL
             note=""
@@ -249,13 +249,6 @@ for link in df_links.itertuples(index=False): #iteramos en la base de datos de l
     except:
         print("error") #Si pasa algo, lo indicará con la leyenda error
         name_list.append("error al extraer")
-        description_list.append("error al extraer")
-        date_list.append("error al extraer")
-        status_list.append("error al extraer")
-        imgUrl_list.append("error al extraer")
-        note_list.append("error al extraer")
-
-
 driver.quit() #Cerramos en navegador
 #Creamos la base de datos
 df = pd.DataFrame({'Nombre': name_list, 'Fecha de publicación': date_list, 'Descripción': description_list,
