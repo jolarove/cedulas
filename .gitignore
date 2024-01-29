@@ -1,3 +1,6 @@
+#Pedimos que ignore las carpetas que no queremos que se carguen a github
 imagenes/
-cedulas2.py
-prueba_extraer_img.py
+pruebas/
+
+#Pedimos que ignore el .gitignore
+.gitignore
