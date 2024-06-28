@@ -200,13 +200,14 @@ Tiene tres secciones: Alerta Ámber, Protocolo Alba y generales.
 driver = abrirNavegador(websites['Guanajuato'], espera, 5, 5, False)
 
 #Creamos el diccionario
-claves = ['Nombre', 'Fecha', 'Tipo' 'Url']
+claves = ['Nombre', 'Url']
 datosGuanajuato = diccionarios(claves)
 
 #Damos scroll hasta el final de la página y esperamos a que el último elemento esté cargado
 scroll_al_final(driver)
 ultimoElemento = WebDriverWait(driver, 15).until(
      lambda d: d.find_element(by='xpath', value='(//h5[@class="card-title"])[last()]').text.strip() != "")
+logger.info(f'Ultimo elemento encontrado: {ultimoElemento}')
 
 #Encontramos las cédulas
 alertasAmber = driver.find_elements(by='xpath', value='//div[@id="listadoAmbar"]//div[@data-aos="fade-up"]')
@@ -220,31 +221,8 @@ for grupo in cedulas:
         urlImg = cedula.find_element(by="xpath", value='.//img').get_attribute('src')
 
         datosGuanajuato['Nombre'].append(nombre)
-        datosGuanajuato['Url'].append(nombre)
-datosGuanajuato['Fecha'].extend(["Sin dato"]*len(alertasAmber))
-datosGuanajuato['Fecha'].extend(["Sin dato"]*len(albas))
-
-#Iteramos para extraer las fechas de las cédulas generales que sí cuentan con el dato
-for cedula in generales:
-    #Es necesario encontrar un botón y presionarlo para extraer
-    boton = cedula.find_element(by='xpath', value='.//button') 
-    driver.execute_script("arguments[0].click();", boton)
-    #Usamos una combinación de esperas para extraer los datos
-    fechaTexto = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, 
-                                                                                   './/div[@class="date"]//p')))
-    time.sleep(1)
-    #Borramos espacios
-    fecha = fechaTexto.text.strip()
-    try:
-        #Si tiene disponible el dato de fecha, lo extraemos
-        datosGuanajuato['Fecha'].append(fecha.split()[1]) 
-    except Exception as e:
-        logger.info('No hay fecha disponible')
-        #Sino, colocamos que no hay dato
-        if fecha == "FECHA":
-            datosGuanajuato['Fecha'].append("Sin dato")
-        else:
-            datosGuanajuato['Fecha'].append(fecha)
+        datosGuanajuato['Url'].append(urlImg)
+        logger.info(f'Desaparecido: {nombre}')
 
 #Cerramos el navegador   
 driver.quit()
