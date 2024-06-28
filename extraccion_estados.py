@@ -44,7 +44,7 @@ def abrirNavegador(website, espera, intentosMaximos, delay, pararCarga):
     """    
     opciones = webdriver.ChromeOptions()
     #Si queremos ver el proceso de automatización, comentamos la siguiente línea
-    opciones.add_argument('--headless')
+    #opciones.add_argument('--headless')
     opciones.add_argument('--start-maximized')
     intento = 0
     while intento < intentosMaximos:
@@ -281,6 +281,7 @@ while paginaActual <= ultimaPagina:
         datosJalisco['Sexo'].append(sexo)
         datosJalisco['Género'].append(genero)
         datosJalisco['Fecha'].append(fecha)
+        datosJalisco['Lugar'].append(lugar)
         datosJalisco['Url'].append(img)
 
     #Damos clic en el botón siguiente página, siempre y cuando no estemos en la última
