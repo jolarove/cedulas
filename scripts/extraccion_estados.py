@@ -103,7 +103,7 @@ def crearDf(datos, estado):
     estado(str): nombre del estado al que pertenecen esos datos
     """
     df = pd.DataFrame(datos)
-    df.to_csv(f'cedulas/{estado}/datos_cedulas_{estado}.csv', index=False)
+    df.to_csv(f'cedulas/Datos/Estados/datos_cedulas_{estado}.csv', index=False)
 
 def scroll_al_final(driver):
     """
@@ -122,7 +122,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 #Importamos los datos de los enlaces para la extracción
-with open('cedulas/enlaces_estados.json', 'r',  encoding='utf-8') as archivo_json:
+with open('cedulas/Datos/enlaces_estados.json', 'r',  encoding='utf-8') as archivo_json:
     websites = json.load(archivo_json)
 espera = 5 
 
