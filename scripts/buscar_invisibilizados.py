@@ -40,6 +40,83 @@ def abrirNavegador(website, espera, intentosMaximos, delay):
     
     raise Exception(f'No se pudo abrir el navegador después de {intentosMaximos} intentos')
 
+def encontrarEstatus(estatus, campos, diccionario, nombre):
+    if estatus == 'borrado':
+        folio = 'SIN DATO'
+        categoria = 'SIN DATO'
+        estatusDic = 'BORRADO'
+        logger.info(f'El caso de {nombre} fue borrado')
+    elif estatus == 'invisibilizado':
+        folio = campos[0]
+        categoria = campos[1]
+        estatusDic = 'INVISIBILIZADO'
+        logger.info(f'El caso de {nombre} fue invisibilizado')
+    elif estatus == 'duda':
+        folio = campos[0]
+        categoria = campos[1]
+        estatusDic = 'DUDA'
+        logger.info(f'El caso de {nombre} debe revisarse')
+    elif estatus == 'no borrado':
+        folio = campos[0]
+        categoria = campos[1]
+        estatusDic = 'NO BORRADO'
+        logger.info(f'El caso de {nombre} no fue borrado')
+    else:
+        logger.error('Hay un error con el estatus asignado')
+    diccionario['Folio'].append(folio)
+    diccionario['Categoría'].append(categoria)
+    diccionario['Estatus'].append(estatusDic)
+
+def filtroEstatus(df, estatus):
+    filtro = df['Estatus'] == estatus
+    dfFiltrado = df[filtro]
+    return dfFiltrado
+
+def extraccionDatos(campos, diccionario, nombre, estado):
+            if len(campos) == 1:
+                encontrarEstatus('borrado', campos, diccionario, nombre)
+            else:
+                nombreCampos = f'{campos[2]} {campos[3]} {campos[4]}'
+                estadoCampos = campos[10]
+                if nombre == nombreCampos:
+                    if estado == estadoCampos:
+                        encontrarEstatus('no borrado', campos, diccionario, nombre)
+                    elif estadoCampos == 'SE DESCONOCE':
+                        encontrarEstatus('duda', campos, diccionario, nombre)
+                    else:
+                        encontrarEstatus('borrado', campos, diccionario, nombre)
+                elif 'INFORMACIÓN' in campos[2]:
+                    if estado == estadoCampos:
+                        encontrarEstatus('invisibilizado', campos, diccionario, nombre)
+                    else:
+                        encontrarEstatus('borrado', campos, diccionario, nombre)
+                else:
+                    encontrarEstatus('borrado', campos, diccionario, nombre)
+
+def confirmarEstatus(df, driver):
+    claves = ['Nombre','Folio', 'Categoría', 'Estatus']
+    diccionario = {clave: [] for clave in claves}
+    for i, elemento in df.iterrows():
+        inputBusqueda = driver.find_element(by='xpath', value='//input[@type="search"]')
+        inputBusqueda.clear()
+        nombre = str(elemento["Nombre"])
+        estado = str(elemento['Estado'])
+        diccionario['Nombre'].append(nombre)
+        logger.info(f'Rastreando caso de: {nombre}')
+        inputBusqueda.send_keys(nombre)
+        time.sleep(1)
+        tabla = driver.find_element(by='tag name', value='table')
+        filas = tabla.find_elements(by='xpath', value='.//tbody//tr')
+        try:
+            datos = filas[0].find_elements(by='tag name', value='td')
+        except Exception as e:
+            logger.error('Hubo un error al encontrar los datos')
+            datos = ['Error']
+        campos = [dato.text for dato in datos]
+
+        extraccionDatos(campos, diccionario, nombre, estado)
+    return diccionario
+
 #Configuramos el logger para los mensajes
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -47,79 +124,22 @@ logger = logging.getLogger(__name__)
 website = 'https://busquedageneralizada.gob.mx/consulta/'
 espera = 5
 
+cedulasBorradas = pd.read_csv('cedulas/Datos/cedulas_borradas.csv')
+
 driver = abrirNavegador(website, espera, 5, 5)
 
-claves = ['Nombre','Folio', 'Categoría', 'Estatus']
-datosDesaparecidos = {clave: [] for clave in claves}
-
-desaparecidosBorrados = pd.read_csv('cedulas/Datos/desaparecidos_borrados.csv')
-
-for i, desaparecido in desaparecidosBorrados.iterrows():
-    inputBusqueda = driver.find_element(by='xpath', value='//input[@type="search"]')
-    inputBusqueda.clear()
-    nombre = str(desaparecido["Nombre"])
-    estado = str(desaparecido['Estado'])
-    datosDesaparecidos['Nombre'].append(nombre)
-    logger.info(f'Rastreando caso de: {nombre}')
-    inputBusqueda.send_keys(nombre)
-    time.sleep(1)
-    tabla = driver.find_element(by='tag name', value='table')
-    filas = tabla.find_elements(by='xpath', value='.//tbody//tr')
-
-    datos = filas[0].find_elements(by='tag name', value='td')
-    campos = [dato.text for dato in datos]
-
-    def encontrarEstatus(estatus, campos, diccionario):
-        if estatus == 'borrado':
-            folio = 'SIN DATO'
-            categoria = 'SIN DATO'
-            estatusDic = 'BORRADO'
-            logger.info(f'El caso de {nombre} fue borrado')
-        elif estatus == 'invisibilizado':
-            folio = campos[0]
-            categoria = campos[1]
-            estatusDic = 'INVISIBILIZADO'
-            logger.info(f'El caso de {nombre} fue invisibilizado')
-        elif estatus == 'duda':
-            folio = campos[0]
-            categoria = campos[1]
-            estatusDic = 'DUDA'
-            logger.info(f'El caso de {nombre} debe revisarse')
-        elif estatus == 'no borrado':
-            folio = campos[0]
-            categoria = campos[1]
-            estatusDic = 'NO BORRADO'
-            logger.info(f'El caso de {nombre} no fue borrado')
-        else:
-            logger.error('Hay un error con el estatus asignado')
-        diccionario['Folio'].append(folio)
-        diccionario['Categoría'].append(categoria)
-        diccionario['Estatus'].append(estatusDic)
-    
-
-    if len(campos) == 1:
-        encontrarEstatus('borrado', campos, datosDesaparecidos)
-    else:
-        nombreCampos = f'{campos[2]} {campos[3]} {campos[4]}'
-        estadoCampos = campos[10]
-        if nombre == nombreCampos:
-            if estado == estadoCampos:
-                encontrarEstatus('no borrado', campos, datosDesaparecidos)
-            elif estadoCampos == 'SE DESCONOCE':
-                encontrarEstatus('duda', campos, datosDesaparecidos)
-            else:
-                encontrarEstatus('borrado', campos, datosDesaparecidos)
-        elif 'INFORMACIÓN' in campos[2]:
-            if estado == estadoCampos:
-                encontrarEstatus('invisibilizado', campos, datosDesaparecidos)
-            else:
-                encontrarEstatus('borrado', campos, datosDesaparecidos)
-        else:
-            encontrarEstatus('borrado', campos, datosDesaparecidos)
+datosDesaparecidos = confirmarEstatus(cedulasBorradas, driver)
 
 driver.quit()
 
 df = pd.DataFrame(datosDesaparecidos)
 
-desaparecidosBorradosCompleto = pd.merge(desaparecidosBorrados, df, on='Nombre', how='inner')
+desaparecidosBorrados = pd.merge(cedulasBorradas, df, on='Nombre', how='inner')
+
+desaparecidosBorradosCompleto = filtroEstatus(desaparecidosBorrados, 'BORRADO')
+
 desaparecidosBorradosCompleto.to_csv('cedulas/Datos/desaparecidos_borrados.csv', index=False)
+
+logger.info('Análisis completado con éxito')
+logger.info(f'El gobierno de México borró {len(desaparecidosBorradosCompleto)} casos del RNPD')
+

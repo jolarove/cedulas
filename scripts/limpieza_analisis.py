@@ -186,6 +186,6 @@ desaparecidosBorrados = desaparecidosBorrados.drop(columns=columnasDrop)
 desaparecidosBorrados = desaparecidosBorrados.rename(columns={'Edad_x': 'Edad', 'Sexo_x': 'Sexo', 
                                                               'Nacionalidad_x': 'Nacionalidad', 'Url_x':'Url'})
 #Exportamos en nuevo df en formato csv
-desaparecidosBorrados.to_csv('cedulas/Datos/desaparecidos_borrados.csv', index=False)
+desaparecidosBorrados.to_csv('cedulas/Datos/cedulas_borradas.csv', index=False)
 logger.info(f'El gobierno de México borró al menos {len(desaparecidosBorrados)}')
 logger.info('Proceso finalizado con éxito')
