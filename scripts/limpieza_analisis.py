@@ -161,6 +161,7 @@ logger.info('Nombres completos generados para el df de agosto')
 #Eliminamos los espacios de más 
 vpDatosAgo['Nombre'] = eliminarEspacios(vpDatosAgo['Nombre'])
 vpDatosAgo['Entidad de desaparición'] = eliminarEspacios(vpDatosAgo['Entidad de desaparición'])
+vpDatosDic['Nombre completo'] = eliminarEspacios(vpDatosDic['Nombre completo'])
 
 #Renombramos las columnas para homologar encabezados
 vpDatosDic.rename(columns={'Nombre completo': 'Nombre'}, inplace=True)
@@ -178,7 +179,7 @@ desaparecidosBorrados = cedulasRegistro[cedulasRegistro['_merge'] == 'left_only'
 #Eliminamos las columnas que no necesitaremos
 columnasDrop = ['Consecutivo Reportes por Persona', 'Consecutivo Registro', 'Primer Apellido',
                 'Segundo Apellido', 'Edad_y', 'Sexo_y', 'Nacionalidad_y', 'Fecha desaparición', 
-                'Autoridad', 'Url_y', '_merge']
+                'Autoridad', 'Url_y', '_merge', 'Folio', 'Categoría']
 desaparecidosBorrados = desaparecidosBorrados.drop(columns=columnasDrop)
 
 #Renombramos las columnas que necesitamos y tienen nombres incorrectos
