@@ -95,17 +95,17 @@ duplicados, toda vez que si un nombre aparece dos veces significa que hay dos c�
 localización y, por ende, la persona ya está localizada.
 """
 duplicados = datosPuebla['Nombre'].duplicated(keep=False)
-datosPuebla = datosPuebla[~duplicados]
+datosPueblaFiltro = datosPuebla[~duplicados]
 logger.info('Datos de desaparecidos de Puebla filtrados con éxito')
 
 #Filtramos en Jalisco
 filtroDesaparecidosJalisco = datosJalisco['Estatus'] == 'PERSONA DESAPARECIDA'
-datosJalisco = datosJalisco[filtroDesaparecidosJalisco]
+datosJaliscoFiltro = datosJalisco[filtroDesaparecidosJalisco]
 logger.info('Datos de desaparecidos de Jalisco filtrados con éxito')
 
 #Filtramos Veracruz
 filtroDesaparecidosVeracruz = datosVeracruz['Estatus'] == 'Desaparecido'
-datosVeracruz = datosVeracruz[filtroDesaparecidosVeracruz]
+datosVeracruzFiltro = datosVeracruz[filtroDesaparecidosVeracruz]
 logger.info('Datos de desaparecidos de Veracruz filtrados con éxito')
 
 """
@@ -119,9 +119,10 @@ dfEstados = []
 
 #Creamos una lista para agregar el nombre del estado que corresponda a cada caso
 nombresEstados = ['ESTADO DE MEXICO', 'GUANAJUATO', 'JALISCO', 'PUEBLA', 'TABASCO', 'VERACRUZ']
-
+desaparecidosEstados = [datosEdoMex, datosGuanajuato, datosJaliscoFiltro, datosPueblaFiltro,
+                        datosTabasco, datosVeracruzFiltro]
 #Con un bucle for creamos los df que enviaremos a la lista dfEstados
-for estado, nombre in zip(estados, nombresEstados):
+for estado, nombre in zip(desaparecidosEstados, nombresEstados):
     df = pd.DataFrame({'Nombre': estado['Nombre'].to_list(),
                        'Estado': [nombre]*len(estado),
                        'Url': estado['Url'].to_list()})
