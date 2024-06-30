@@ -68,51 +68,58 @@ for i, desaparecido in desaparecidosBorrados.iterrows():
 
     datos = filas[0].find_elements(by='tag name', value='td')
     campos = [dato.text for dato in datos]
+
+    def encontrarEstatus(estatus, campos, diccionario):
+        if estatus == 'borrado':
+            folio = 'SIN DATO'
+            categoria = 'SIN DATO'
+            estatusDic = 'BORRADO'
+            logger.info(f'El caso de {nombre} fue borrado')
+        elif estatus == 'invisibilizado':
+            folio = campos[0]
+            categoria = campos[1]
+            estatusDic = 'INVISIBILIZADO'
+            logger.info(f'El caso de {nombre} fue invisibilizado')
+        elif estatus == 'duda':
+            folio = campos[0]
+            categoria = campos[1]
+            estatusDic = 'DUDA'
+            logger.info(f'El caso de {nombre} debe revisarse')
+        elif estatus == 'no borrado':
+            folio = campos[0]
+            categoria = campos[1]
+            estatusDic = 'NO BORRADO'
+            logger.info(f'El caso de {nombre} no fue borrado')
+        else:
+            logger.error('Hay un error con el estatus asignado')
+        diccionario['Folio'].append(folio)
+        diccionario['Categoría'].append(categoria)
+        diccionario['Estatus'].append(estatusDic)
     
+
     if len(campos) == 1:
-        datosDesaparecidos['Folio'].append('SIN DATO')
-        datosDesaparecidos['Categoría'].append('SIN DATO')
-        datosDesaparecidos['Estatus'].append('BORRADO')
-        logger.info(f'El caso de {nombre} fue borrado')
+        encontrarEstatus('borrado', campos, datosDesaparecidos)
     else:
         nombreCampos = f'{campos[2]} {campos[3]} {campos[4]}'
         estadoCampos = campos[10]
         if nombre == nombreCampos:
             if estado == estadoCampos:
-                datosDesaparecidos['Folio'].append(campos[0])
-                datosDesaparecidos['Categoría'].append(campos[1])
-                datosDesaparecidos['Estatus'].append('NO BORRADO')
-                logger.info(f'El caso de {nombre} no fue borrado')
+                encontrarEstatus('no borrado', campos, datosDesaparecidos)
             elif estadoCampos == 'SE DESCONOCE':
-                datosDesaparecidos['Folio'].append(campos[0])
-                datosDesaparecidos['Categoría'].append(campos[1])
-                datosDesaparecidos['Estatus'].append('DUDA')
-                logger.info(f'El caso de {nombre} debe revisarse')
+                encontrarEstatus('duda', campos, datosDesaparecidos)
             else:
-                datosDesaparecidos['Folio'].append('SIN DATO')
-                datosDesaparecidos['Categoría'].append('SIN DATO')
-                datosDesaparecidos['Estatus'].append('BORRADO')
-                logger.info(f'El caso de {nombre} fue borrado')
+                encontrarEstatus('borrado', campos, datosDesaparecidos)
         elif 'INFORMACIÓN' in campos[2]:
             if estado == estadoCampos:
-                datosDesaparecidos['Folio'].append(campos[0])
-                datosDesaparecidos['Categoría'].append(campos[1])
-                datosDesaparecidos['Estatus'].append('INVISIBILIZADO')
-                logger.info(f'El caso de {nombre} fue invisibilizado')
+                encontrarEstatus('invisibilizado', campos, datosDesaparecidos)
             else:
-                datosDesaparecidos['Folio'].append('SIN DATO')
-                datosDesaparecidos['Categoría'].append('SIN DATO')
-                datosDesaparecidos['Estatus'].append('BORRADO')
-                logger.info(f'El caso de {nombre} fue borrado')
+                encontrarEstatus('borrado', campos, datosDesaparecidos)
         else:
-            datosDesaparecidos['Folio'].append('SIN DATO')
-            datosDesaparecidos['Categoría'].append('SIN DATO')
-            datosDesaparecidos['Estatus'].append('BORRADO')
-            logger.info(f'El caso de {nombre} fue borrado')
+            encontrarEstatus('borrado', campos, datosDesaparecidos)
 
 driver.quit()
 
 df = pd.DataFrame(datosDesaparecidos)
 
 desaparecidosBorradosCompleto = pd.merge(desaparecidosBorrados, df, on='Nombre', how='inner')
-desaparecidosBorradosCompleto.to_csv('cedulas/desaparecidos_borrados.csv', index=False)
+desaparecidosBorradosCompleto.to_csv('cedulas/Datos/desaparecidos_borrados.csv', index=False)
