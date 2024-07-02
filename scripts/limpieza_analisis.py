@@ -8,6 +8,7 @@ Desaparecidas
 #PAQUETERÏAS
 import pandas as pd
 import logging
+import re
 
 #FUNCIONES
 def eliminarCaracteres(texto):
@@ -37,10 +38,11 @@ def eliminarEspacios(valores):
     Retorna:
     columna(df): data frame con los valores sin espacios adicionales
     """
-    columna = valores.str.strip().str.replace("  ", " ")
+    columna = valores.str.strip()
+    columna = columna.apply(lambda x: re.sub(r'\s+', ' ', x))
     return columna
 
-def cruceDatos(df1, df2, columnas):
+def filtroDatos(df1, df2):
     """
     Cruza dos bases de datos y elimina duplicados
 
@@ -51,10 +53,10 @@ def cruceDatos(df1, df2, columnas):
     Retorna:
     nuevoDf(df): nuevo data frame con el resultado del cruce de las bases de datos
     """
-    nuevoDf = pd.merge(df1, df2, on=columnas, how='inner')
-    nuevoDf = nuevoDf.drop_duplicates(subset=columnas)
-    logger.info(f'En la base de datos hay: {len(nuevoDf)} desaparecidos con cédula')
-    return nuevoDf
+    df1['clave'] = df1['Nombre'] + "_" + df1['Estado']
+    df2['clave'] = df2['Nombre'] + "_" + df2['Estado']
+    filtro = df1['clave'].isin(df2['clave'])
+    return filtro
 
 #ACCIONES
 
@@ -170,22 +172,32 @@ vpDatosAgo.rename(columns={'Entidad de desaparición': 'Estado'}, inplace=True)
 logger.info('Iniciamos cruce de bases de datos')
 #Cruzamos las bases de datos de agosto y diciembre con la de las cédulas de los estados
 columnas = ['Nombre', 'Estado']
-cedulasVpAgo = cruceDatos(vpDatosAgo, datosEstados, columnas)
-cedulasVpDic = cruceDatos(vpDatosDic, datosEstados, columnas)
+agoFiltro = filtroDatos(vpDatosAgo, datosEstados)
+cedulasVpAgo = vpDatosAgo[agoFiltro]
 
-#Hacemos un cruce adicional para encontrar los registros borrados
-cedulasRegistro = pd.merge(cedulasVpAgo, cedulasVpDic, on=['Nombre', 'Estado'], how='outer', indicator=True)
-desaparecidosBorrados = cedulasRegistro[cedulasRegistro['_merge'] == 'left_only']
-#Eliminamos las columnas que no necesitaremos
-columnasDrop = ['Consecutivo Reportes por Persona', 'Consecutivo Registro', 'Primer Apellido',
-                'Segundo Apellido', 'Edad_y', 'Sexo_y', 'Nacionalidad_y', 'Fecha desaparición', 
-                'Autoridad', 'Url_y', '_merge', 'Folio', 'Categoría']
-desaparecidosBorrados = desaparecidosBorrados.drop(columns=columnasDrop)
+dicFiltro = filtroDatos(vpDatosDic, datosEstados)
+cedulasVpDic = vpDatosDic[dicFiltro]
 
-#Renombramos las columnas que necesitamos y tienen nombres incorrectos
-desaparecidosBorrados = desaparecidosBorrados.rename(columns={'Edad_x': 'Edad', 'Sexo_x': 'Sexo', 
-                                                              'Nacionalidad_x': 'Nacionalidad', 'Url_x':'Url'})
-#Exportamos en nuevo df en formato csv
-desaparecidosBorrados.to_csv('cedulas/Datos/cedulas_borradas.csv', index=False)
-logger.info(f'El gobierno de México borró al menos {len(desaparecidosBorrados)}')
+duplicadosAgo = cedulasVpAgo['clave'].duplicated()
+cedulasVpAgo = cedulasVpAgo[~duplicadosAgo]
+
+duplicadosDic = cedulasVpDic['clave'].duplicated()
+cedulasVpDic = cedulasVpDic[~duplicadosDic]
+
+filtroBorrados = cedulasVpAgo['clave'].isin(cedulasVpDic['clave'])
+dfBorrados = cedulasVpAgo[~filtroBorrados]
+
+columnas = ['Nombre', 'Edad', 'Sexo', 'Nacionalidad', 'Fecha de desaparición', 'Estado']
+dfBorrados = dfBorrados[columnas]
+
+print(dfBorrados.info())
+dfBorrados.to_csv('cedulas/Datos/cedulas_borradas.csv', index=False)
+
+estadosFiltro = filtroDatos(datosEstados, vpDatosDic)
+cedulasSinRegistro = datosEstados[~estadosFiltro]
+duplicadosSinReg = cedulasSinRegistro['clave'].duplicated()
+cedulasSinRegistro = cedulasSinRegistro[~duplicadosSinReg]
+print(cedulasSinRegistro.info())
+cedulasSinRegistro.to_csv('cedulas/Datos/cedulas_sin_registro.csv', index=False)
+
 logger.info('Proceso finalizado con éxito')

@@ -45,27 +45,32 @@ def encontrarEstatus(estatus, campos, diccionario, nombre):
         folio = 'SIN DATO'
         categoria = 'SIN DATO'
         estatusDic = 'BORRADO'
+        nota = ''
         logger.info(f'El caso de {nombre} fue borrado')
     elif estatus == 'invisibilizado':
         folio = campos[0]
         categoria = campos[1]
         estatusDic = 'INVISIBILIZADO'
+        nota = campos[2]
         logger.info(f'El caso de {nombre} fue invisibilizado')
     elif estatus == 'duda':
         folio = campos[0]
         categoria = campos[1]
         estatusDic = 'DUDA'
+        nota = ''
         logger.info(f'El caso de {nombre} debe revisarse')
     elif estatus == 'no borrado':
         folio = campos[0]
         categoria = campos[1]
         estatusDic = 'NO BORRADO'
+        nota = ''
         logger.info(f'El caso de {nombre} no fue borrado')
     else:
         logger.error('Hay un error con el estatus asignado')
     diccionario['Folio'].append(folio)
     diccionario['Categoría'].append(categoria)
     diccionario['Estatus'].append(estatusDic)
+    diccionario['Nota'].append(nota)
 
 def filtroEstatus(df, estatus):
     filtro = df['Estatus'] == estatus
@@ -94,7 +99,7 @@ def extraccionDatos(campos, diccionario, nombre, estado):
                     encontrarEstatus('borrado', campos, diccionario, nombre)
 
 def confirmarEstatus(df, driver):
-    claves = ['Nombre','Folio', 'Categoría', 'Estatus']
+    claves = ['Nombre','Folio', 'Categoría', 'Estatus', 'Nota']
     diccionario = {clave: [] for clave in claves}
     for i, elemento in df.iterrows():
         inputBusqueda = driver.find_element(by='xpath', value='//input[@type="search"]')
@@ -105,14 +110,24 @@ def confirmarEstatus(df, driver):
         logger.info(f'Rastreando caso de: {nombre}')
         inputBusqueda.send_keys(nombre)
         time.sleep(1)
-        tabla = driver.find_element(by='tag name', value='table')
+        try:
+            tabla = driver.find_element(by='tag name', value='table')
+        except Exception as e:
+            logger.error('Error al extraer, el sitio se actualizará')
+            driver.get(website)
+            time.sleep(5)
+            inputBusqueda = driver.find_element(by='xpath', value='//input[@type="search"]')
+            inputBusqueda.send_keys(nombre)
+            tabla = driver.find_element(by='tag name', value='table')
+
         filas = tabla.find_elements(by='xpath', value='.//tbody//tr')
+        
         try:
             datos = filas[0].find_elements(by='tag name', value='td')
-        except Exception as e:
+            campos = [dato.text for dato in datos]
+        except:    
             logger.error('Hubo un error al encontrar los datos')
-            datos = ['Error']
-        campos = [dato.text for dato in datos]
+            campos =['SIN DATO']
 
         extraccionDatos(campos, diccionario, nombre, estado)
     return diccionario
@@ -137,9 +152,26 @@ df = pd.DataFrame(datosDesaparecidos)
 desaparecidosBorrados = pd.merge(cedulasBorradas, df, on='Nombre', how='inner')
 
 desaparecidosBorradosCompleto = filtroEstatus(desaparecidosBorrados, 'BORRADO')
+dfInvidibilizados = filtroEstatus(desaparecidosBorrados, 'INVISIBILIZADO')
 
 desaparecidosBorradosCompleto.to_csv('cedulas/Datos/desaparecidos_borrados.csv', index=False)
 
-logger.info('Análisis completado con éxito')
 logger.info(f'El gobierno de México borró {len(desaparecidosBorradosCompleto)} casos del RNPD')
 
+cedulasSinRegistro = pd.read_csv('cedulas/Datos/cedulas_sin_registro.csv')
+driver = abrirNavegador(website, espera, 5, 5)
+
+datosCedulas = confirmarEstatus(cedulasSinRegistro, driver)
+driver.quit()
+
+df = pd.DataFrame(datosCedulas)
+
+dfCedulas = pd.merge(cedulasSinRegistro, df, on='Nombre', how='inner')
+dfCedulasInvisibilizados = filtroEstatus(dfCedulas, 'INVISIBILIZADO')
+dfInvisibilizadosFinal = pd.concat([dfInvidibilizados, dfCedulasInvisibilizados], ignore_index=True)
+dfInvisibilizadosFinal.to_csv('cedulas/Datos/desaparecidos_invisibilizados.csv', index=False)
+
+dfIncluidas = filtroEstatus(dfCedulas, 'NO BORRADO')
+dfIncluidas.to_csv('cedulas/Datos/incluidas_revision.csv', index=False)
+logger.info(f'El gobierno de México invisibilizó a {len(dfInvisibilizadosFinal)} casos de desaparecidos')
+logger.info('Análisis finalizado con éxito')
