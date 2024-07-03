@@ -48,7 +48,6 @@ def filtroDatos(df1, df2):
 
     Parámetros:
     df1(df) y df2(df): data frames a cruzar
-    columnas(list): columnas que se utilizarán para encontrar coincidencias y cruzar
 
     Retorna:
     nuevoDf(df): nuevo data frame con el resultado del cruce de las bases de datos
@@ -178,26 +177,26 @@ cedulasVpAgo = vpDatosAgo[agoFiltro]
 dicFiltro = filtroDatos(vpDatosDic, datosEstados)
 cedulasVpDic = vpDatosDic[dicFiltro]
 
+#Eliminamos los duplicados
 duplicadosAgo = cedulasVpAgo['clave'].duplicated()
 cedulasVpAgo = cedulasVpAgo[~duplicadosAgo]
 
 duplicadosDic = cedulasVpDic['clave'].duplicated()
 cedulasVpDic = cedulasVpDic[~duplicadosDic]
 
+#Encontramos los registros borrados y que tienen cédula activa por desaparición
 filtroBorrados = cedulasVpAgo['clave'].isin(cedulasVpDic['clave'])
 dfBorrados = cedulasVpAgo[~filtroBorrados]
 
 columnas = ['Nombre', 'Edad', 'Sexo', 'Nacionalidad', 'Fecha de desaparición', 'Estado']
 dfBorrados = dfBorrados[columnas]
-
-print(dfBorrados.info())
 dfBorrados.to_csv('cedulas/Datos/cedulas_borradas.csv', index=False)
 
+#Encontramos las cédulas activas que no están en el registro
 estadosFiltro = filtroDatos(datosEstados, vpDatosDic)
 cedulasSinRegistro = datosEstados[~estadosFiltro]
 duplicadosSinReg = cedulasSinRegistro['clave'].duplicated()
 cedulasSinRegistro = cedulasSinRegistro[~duplicadosSinReg]
-print(cedulasSinRegistro.info())
 cedulasSinRegistro.to_csv('cedulas/Datos/cedulas_sin_registro.csv', index=False)
 
 logger.info('Proceso finalizado con éxito')
