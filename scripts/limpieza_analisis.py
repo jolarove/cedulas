@@ -199,4 +199,28 @@ duplicadosSinReg = cedulasSinRegistro['clave'].duplicated()
 cedulasSinRegistro = cedulasSinRegistro[~duplicadosSinReg]
 cedulasSinRegistro.to_csv('cedulas/Datos/cedulas_sin_registro.csv', index=False)
 
+#ANALIZAMOS LA NUEVA VERSIÓN
+nuevaVersion = pd.read_csv('cedulas/Datos/nueva_Versión_Pública.csv')
+nuevaVersion = nuevaVersion.fillna("")
+nuevaVersion['Nombre'] = eliminarEspacios(nuevaVersion['Nombre'])
+
+filtro = filtroDatos(nuevaVersion, datosEstados)
+cedulasNV = nuevaVersion[filtro]
+
+duplicadosNV = cedulasNV['clave'].duplicated()
+cedulasNV = cedulasNV[~duplicadosNV]
+
+filtroBorradosNV = cedulasVpAgo['clave'].isin(cedulasNV['clave'])
+dfBorradosNV = cedulasVpAgo[~filtroBorradosNV]
+
+columnas = ['Nombre', 'Edad', 'Sexo', 'Nacionalidad', 'Fecha de desaparición', 'Estado']
+dfBorradosNV = dfBorradosNV[columnas]
+dfBorradosNV.to_csv('cedulas/Datos/cedulas_borradas_nv_RNPDNO.csv', index=False)
+
+estadosFiltroNV = filtroDatos(datosEstados, nuevaVersion)
+cedulasSinRegistroNV = datosEstados[~estadosFiltroNV]
+duplicadosSinRegNV = cedulasSinRegistroNV['clave'].duplicated()
+cedulasSinRegistroNV = cedulasSinRegistroNV[~duplicadosSinRegNV]
+cedulasSinRegistroNV.to_csv('cedulas/Datos/cedulas_sin_registro_NV_RNPDNO.csv', index=False)
+
 logger.info('Proceso finalizado con éxito')
