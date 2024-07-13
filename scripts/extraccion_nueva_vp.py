@@ -167,5 +167,5 @@ driver.quit()
 #Creamos la base de datos con el diccionario final
 df = pd.DataFrame(datosRegistro)
 #La exportamos en formato csv
-df.to_csv('Connectas/cedulas/Datos/nueva_Versión_Pública.csv', index=False)
+df.to_csv('cedulas/Datos/nueva_Versión_Pública.csv', index=False)
 logger.info('Proceso terminado con éxito')

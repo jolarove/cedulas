@@ -44,7 +44,7 @@ def abrirNavegador(website, espera, intentosMaximos, delay, pararCarga):
     """    
     opciones = webdriver.ChromeOptions()
     #Si queremos ver el proceso de automatización, comentamos la siguiente línea
-    opciones.add_argument('--headless')
+    #opciones.add_argument('--headless')
     opciones.add_argument('--start-maximized')
     intento = 0
     while intento < intentosMaximos:
