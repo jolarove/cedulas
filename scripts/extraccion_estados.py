@@ -174,9 +174,13 @@ for estatus in estatusSelector:
 
     #Con un ciclo while recorremos las páginas disponibles de la tabla donde están los datos
     while elementosCapturados < totalCasos:
-        tabla = driver.find_element(by='id', value='tblResult') #Buscamos la tabla
+        tabla = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.ID, 'tblResult'))
+        )
         #Encontramos la información de las filas de la tabla
-        casos = tabla.find_elements(by='xpath', value='.//tbody//tr') 
+        casos = WebDriverWait(tabla, 10).until(
+            EC.visibility_of_all_elements_located((By.XPATH, './/tbody//tr'))
+        )
 
         #Encontramos la información de cada celda y la agrupamos de acuerdo a las columnas
         for caso in casos:
