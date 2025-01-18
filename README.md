@@ -53,3 +53,5 @@ Algunas plataformas restringen la cantidad de información accesible mediante sc
 Conclusión
 
 El uso de bases de datos públicas y técnicas de web scraping permitió documentar las discrepancias y deficiencias en la gestión de información sobre personas desaparecidas en México. Esta metodología asegura un análisis objetivo y fundamentado, proporcionando evidencia para sustentar las conclusiones del reporte.
+
+NOTA: Los scripts fueron realizados y revisados por última vez en octubre de 2024. Desde entonces existe la posibilidad de que las plataformas origen de donde se extrajo la información, hayan tenido modificaciones. Si se intenta replicar este procedimiento, hay que tener en cuenta esta advertencia para modificar, en dado caso, el código.
