@@ -5,8 +5,7 @@ Con logging gestionamos los mensajes y alertas
 """
 
 #PAQUETERÍAS
-from webdriver_manager.chrome import ChromeDriverManager 
-from selenium.webdriver.chrome.service import Service as ChromeService 
+import chromedriver_autoinstaller
 from selenium import webdriver 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -36,8 +35,8 @@ def abrirNavegador(website, pathEspera, intentosMaximos, delay):
     intento = 0
     while intento < intentosMaximos:
         try:
-            servicio = ChromeService(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=servicio, options=opciones)
+            chromedriver_autoinstaller.install()
+            driver = webdriver.Chrome(options=opciones)
             driver.get(website)
             espera = WebDriverWait(driver, 60).until(
                 EC.visibility_of_all_elements_located((By.XPATH, pathEspera))
@@ -55,7 +54,7 @@ def cargaEspera():
     Gestiona el avance de los procesos hasta que termine la carga de la misma web
     """
     elemento = (By.XPATH, '//img[@alt="IMAGEN CNB"]')
-    espera = WebDriverWait(driver, 30)
+    espera = WebDriverWait(driver, 120)
     espera.until(EC.invisibility_of_element_located(elemento))
 
 #ACCIONES

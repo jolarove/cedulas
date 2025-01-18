@@ -68,12 +68,15 @@ datosEdoMex = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Estado de México
 datosGuanajuato = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Guanajuato.csv')
 datosJalisco = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Jalisco.csv')
 datosPuebla = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Puebla.csv')
-datosTabasco = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Tabasco.csv')
+try:
+    datosTabasco = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Tabasco.csv')
+except:
+    pass
 datosVeracruz = pd.read_csv('cedulas/Datos/Estados/datos_cedulas_Veracruz.csv')
 logger.info('Bases de datos importadas con éxito')
 
 #Creamos una lista con esas bases de datos
-estados = [datosEdoMex, datosGuanajuato, datosJalisco, datosPuebla, datosTabasco, datosVeracruz]
+estados = [datosEdoMex, datosGuanajuato, datosJalisco, datosPuebla, datosVeracruz]
 
 #Con un bucle for eliminamos acentos y puntos en la columna nombre
 for estado in estados:
@@ -120,8 +123,8 @@ dfEstados = []
 
 #Creamos una lista para agregar el nombre del estado que corresponda a cada caso
 nombresEstados = ['ESTADO DE MEXICO', 'GUANAJUATO', 'JALISCO', 'PUEBLA', 'TABASCO', 'VERACRUZ']
-desaparecidosEstados = [datosEdoMex, datosGuanajuato, datosJaliscoFiltro, datosPueblaFiltro,
-                        datosTabasco, datosVeracruzFiltro]
+desaparecidosEstados = [datosEdoMex, datosGuanajuato, datosJaliscoFiltro, datosPueblaFiltro
+                        , datosVeracruzFiltro]
 #Con un bucle for creamos los df que enviaremos a la lista dfEstados
 for estado, nombre in zip(desaparecidosEstados, nombresEstados):
     df = pd.DataFrame({'Nombre': estado['Nombre'].to_list(),
@@ -214,13 +217,16 @@ filtroBorradosNV = cedulasVpAgo['clave'].isin(cedulasNV['clave'])
 dfBorradosNV = cedulasVpAgo[~filtroBorradosNV]
 
 columnas = ['Nombre', 'Edad', 'Sexo', 'Nacionalidad', 'Fecha de desaparición', 'Estado']
-dfBorradosNV = dfBorradosNV[columnas]
-dfBorradosNV.to_csv('cedulas/Datos/cedulas_borradas_nv_RNPDNO.csv', index=False)
+dfBorradosNVP = dfBorradosNV[columnas]
+dfBorradosNVP.to_csv('cedulas/Datos/cedulas_borradas_nv_RNPDNO.csv', index=False)
 
 estadosFiltroNV = filtroDatos(datosEstados, nuevaVersion)
 cedulasSinRegistroNV = datosEstados[~estadosFiltroNV]
 duplicadosSinRegNV = cedulasSinRegistroNV['clave'].duplicated()
 cedulasSinRegistroNV = cedulasSinRegistroNV[~duplicadosSinRegNV]
+filtroBorrados = cedulasSinRegistroNV['clave'].isin(dfBorradosNV['clave'])
+cedulasSinRegistroNV = cedulasSinRegistroNV[~filtroBorrados]
 cedulasSinRegistroNV.to_csv('cedulas/Datos/cedulas_sin_registro_NV_RNPDNO.csv', index=False)
+logger.info(f'Un total de {len(cedulasSinRegistroNV)} desaparecidos no están en el registro')
 
 logger.info('Proceso finalizado con éxito')

@@ -14,8 +14,7 @@ Con urllib gestionamos las urls para obtener datos en el caso del Estado de Méx
 Con re gestionamos las expresiones regulares
 """
 #PAQUETERÍAS
-from webdriver_manager.chrome import ChromeDriverManager 
-from selenium.webdriver.chrome.service import Service as ChromeService 
+import chromedriver_autoinstaller
 from selenium import webdriver 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -44,13 +43,13 @@ def abrirNavegador(website, espera, intentosMaximos, delay, pararCarga):
     """    
     opciones = webdriver.ChromeOptions()
     #Si queremos ver el proceso de automatización, comentamos la siguiente línea
-    #opciones.add_argument('--headless')
+    opciones.add_argument('--headless')
     opciones.add_argument('--start-maximized')
     intento = 0
     while intento < intentosMaximos:
         try:
-            servicio = ChromeService(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=servicio, options=opciones)
+            chromedriver_autoinstaller.install()
+            driver = webdriver.Chrome(options=opciones)
             if pararCarga:
                 frenarCarga(driver, website)
             else:
@@ -130,6 +129,51 @@ espera = 5
 No nos es funcional un bucle porque cada sitio web tiene estructura distinta, estonces tendrán que 
 ser procesos individualizados por cada estado.
 """
+
+#####Tabasco######
+"""
+Particularidades: no funciona con el proceso visible, hay que ocultarlo. No es necesaria la paginación
+"""
+driver = abrirNavegador(websites['Tabasco'], espera, 5, 5, False)
+time.sleep(10)
+#Buscamos el selector y le especificamos que nos muestre todos los registros en la tabla,
+#así evitamos la paginación
+selector = driver.find_element(by='xpath', value='//select[@name="dataTable_length"]')
+todos = selector.find_element(by='xpath', value='.//option[@value="-1"]')
+todos.click()
+time.sleep(3)
+
+#Buscamos la tabla y los registros
+tabla = driver.find_element(by='id', value='dataTable')
+registros = tabla.find_elements(by='xpath', value='.//tbody//tr')
+
+#Creamos el diccionario
+claves = ['Nombre', 'Sexo', 'Estatus', 'Url']
+datosTabasco = diccionarios(claves)
+
+#Con un bucle for iteramos entre las filas y columnas para extraer la información y enviarla a las listas
+for registro in registros:
+    nombre = registro.find_element(by='xpath', value='.//td[1]')
+    sexo = registro.find_element(by='xpath', value='.//td[2]')
+    estado = registro.find_element(by='xpath', value='.//td[3]')
+    url = registro.find_element(by='xpath', value='.//td[4]')
+
+    #Eviamos al diccionario
+    datosTabasco['Nombre'].append(nombre.text)
+    logger.info(nombre.text)
+    datosTabasco['Sexo'].append(sexo.text)
+    datosTabasco['Estatus'].append(estado.text)
+    link = url.find_element(by='tag name', value='a').get_attribute('href')
+    datosTabasco['Url'].append(link)
+
+driver.quit() #Cerramos el navegador
+
+#Creamos y exportamos la base de datos
+crearDf(datosTabasco, 'Tabasco')
+
+logger.info('Extracción completada con éxito')
+
+
 ####VERACRUZ#####
 """
 Particularidades: Tiene debidamente identificados a desaparecidos y localizdos. Hay paginación.
@@ -421,44 +465,3 @@ driver.quit()
 #Creamos la base de datos y la exportamos
 crearDf(datosPuebla, 'Puebla')
 
-#####Tabasco######
-"""
-Particularidades: no funciona con el proceso visible, hay que ocultarlo. No es necesaria la paginación
-"""
-driver = abrirNavegador(websites['Tabasco'], espera, 5, 5, False)
-#Buscamos el selector y le especificamos que nos muestre todos los registros en la tabla,
-#así evitamos la paginación
-selector = driver.find_element(by='xpath', value='//select[@name="dataTable_length"]')
-todos = selector.find_element(by='xpath', value='.//option[@value="-1"]')
-todos.click()
-time.sleep(3)
-
-#Buscamos la tabla y los registros
-tabla = driver.find_element(by='id', value='dataTable')
-registros = tabla.find_elements(by='xpath', value='.//tbody//tr')
-
-#Creamos el diccionario
-claves = ['Nombre', 'Sexo', 'Estatus', 'Url']
-datosTabasco = diccionarios(claves)
-
-#Con un bucle for iteramos entre las filas y columnas para extraer la información y enviarla a las listas
-for registro in registros:
-    nombre = registro.find_element(by='xpath', value='.//td[1]')
-    sexo = registro.find_element(by='xpath', value='.//td[2]')
-    estado = registro.find_element(by='xpath', value='.//td[3]')
-    url = registro.find_element(by='xpath', value='.//td[4]')
-
-    #Eviamos al diccionario
-    datosTabasco['Nombre'].append(nombre.text)
-    logger.info(nombre.text)
-    datosTabasco['Sexo'].append(sexo.text)
-    datosTabasco['Estatus'].append(estado.text)
-    link = url.find_element(by='tag name', value='a').get_attribute('href')
-    datosTabasco['Url'].append(link)
-
-driver.quit() #Cerramos el navegador
-
-#Creamos y exportamos la base de datos
-crearDf(datosTabasco, 'Tabasco')
-
-logger.info('Extracción completada con éxito')
